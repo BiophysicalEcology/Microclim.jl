@@ -6,10 +6,10 @@ using Unitful
 
 const microclimate_increments = (0.0,2.5,5.0,10.0,15.0,20.0,30.0,50.0,100.0,200.0) .* u"cm"
 
-export niche_setup, 
-       niche_interpolate, 
-       lin_interpolate, 
-       MicroclimateData, 
+export niche_setup,
+       niche_interpolate,
+       lin_interpolate,
+       MicroclimateData
 
 abstract type AbstractMicroclimateData end
 
