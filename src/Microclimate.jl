@@ -6,8 +6,8 @@ using Unitful
 
 const microclimate_increments = (0.0,2.5,5.0,10.0,15.0,20.0,30.0,50.0,100.0,200.0) .* u"cm"
 
-export niche_setup,
-       niche_interpolate,
+export layer_setup,
+       layer_interpolate,
        lin_interpolate,
        MicroclimateData
 
@@ -49,7 +49,7 @@ end
 
 " Calculate current interpolation layers and fraction from NicheMapR data"
 layer_setup(height) = begin
-    for (i, upper) in enumerate(nichemap_increments)
+    for (i, upper) in enumerate(microclimate_increments)
         if upper > height
             lower = microclimate_increments[i - 1]
             p = (height-lower)/(upper-lower)
