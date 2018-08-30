@@ -4,7 +4,7 @@ os:
   - linux
   - osx
 julia:
-  - 0.6
+  - 0.7
   - nightly
 notifications:
   email: false
@@ -27,7 +27,8 @@ git:
 
 ## uncomment the following lines to override the default test script
 #script:
-#  - julia -e 'Pkg.clone(pwd()); Pkg.build("Microclimate"); Pkg.test("Microclimate"; coverage=true)'
+  - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/FugroRoames/TypedTables.jl.git")); Pkg.build("TypedTables")'
+  - julia -e 'using Pkg; Pkg.add(PackageSpec(url=pwd())); Pkg.build("Microclimate"); Pkg.test("Microclimate"; coverage=true)'
 after_success:
   # push coverage results to Coveralls
   - julia -e 'cd(Pkg.dir("Microclimate")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
