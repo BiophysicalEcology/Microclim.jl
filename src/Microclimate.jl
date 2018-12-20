@@ -4,66 +4,68 @@ using DataFrames,
       TypedTables, 
       Unitful
 
-const microclimate_increments = (0.0,2.5,5.0,10.0,15.0,20.0,30.0,50.0,100.0,200.0) .* Unitful.cm
+import Base: convert
 
 export LayerInterp,
        layer_interp,
        lin_interp,
-       MicroclimateTable,
+       MicroclimateTables,
        MicroclimateData
+
+const microclimate_increments = (0.0,2.5,5.0,10.0,15.0,20.0,30.0,50.0,100.0,200.0) .* Unitful.cm
 
 abstract type AbstractMicroclimateData end
 
 struct MicroclimateData <: AbstractMicroclimateData
-  soil::DataFrame
-  shadsoil::DataFrame
-  metout::DataFrame
-  shadmet::DataFrame
-  soilmoist::DataFrame
-  shadmoist::DataFrame
-  humid::DataFrame
-  shadhumid::DataFrame
-  soilpot::DataFrame
-  shadpot::DataFrame
-  plant::DataFrame
-  shadplant::DataFrame
-  RAINFALL::Vector{Float64}
-  dim::Int
-  ALTT::Float64
-  REFL::Float64
-  MAXSHADES::Vector{Float64}
-  longlat::Vector{Float64}
-  nyears::Int
-  timeinterval::Int
-  minshade::Float64
-  maxshade::Float64
-  DEP::Vector{Float64}
+    soil::DataFrame
+    shadsoil::DataFrame
+    metout::DataFrame
+    shadmet::DataFrame
+    soilmoist::DataFrame
+    shadmoist::DataFrame
+    humid::DataFrame
+    shadhumid::DataFrame
+    soilpot::DataFrame
+    shadpot::DataFrame
+    plant::DataFrame
+    shadplant::DataFrame
+    RAINFALL::Vector{Float64}
+    dim::Int
+    ALTT::Float64
+    REFL::Float64
+    MAXSHADES::Vector{Float64}
+    longlat::Vector{Float64}
+    nyears::Int
+    timeinterval::Int
+    minshade::Float64
+    maxshade::Float64
+    DEP::Vector{Float64}
 end
 
-struct MicroclimateTable{A,B,C,D,E,F,G,H,I,J,K,L} <: AbstractMicroclimateData
-  soil::A
-  shadsoil::B
-  metout::C
-  shadmet::D
-  soilmoist::E
-  shadmoist::F
-  humid::G
-  shadhumid::H
-  soilpot::I
-  shadpot::J
-  plant::K
-  shadplant::L
-  RAINFALL::Vector{Float64}
-  dim::Int
-  ALTT::Float64
-  REFL::Float64
-  MAXSHADES::Vector{Float64}
-  longlat::Vector{Float64}
-  nyears::Int
-  timeinterval::Int
-  minshade::Float64
-  maxshade::Float64
-  DEP::Vector{Float64}
+struct MicroclimateTables{A,B,C,D,E,F,G,H,I,J,K,L} <: AbstractMicroclimateData
+    soil::A
+    shadsoil::B
+    metout::C
+    shadmet::D
+    soilmoist::E
+    shadmoist::F
+    humid::G
+    shadhumid::H
+    soilpot::I
+    shadpot::J
+    plant::K
+    shadplant::L
+    RAINFALL::Vector{Float64}
+    dim::Int
+    ALTT::Float64
+    REFL::Float64
+    MAXSHADES::Vector{Float64}
+    longlat::Vector{Float64}
+    nyears::Int
+    timeinterval::Int
+    minshade::Float64
+    maxshade::Float64
+    DEP::Vector{Float64}
 end
 
 
@@ -85,13 +87,13 @@ LayerInterp(height) = begin
     end
     # Otherwise its taller/deeper than we have data, use the largest we have.
     max = length(microclimate_increments) + 2
-    return LayerInterp(max, max, 1.0, 0.0)
+    LayerInterp(max, max, 1.0, 0.0)
 end
 
 " Interpolate between two layers of environmental data. "
 layer_interp(interp, table, pos) = begin
-    table.data[interp.lower][pos] * interp.lowerfrac +
-    table.data[interp.upper][pos] * interp.upperfrac
+    table[pos][interp.lower] * interp.lowerfrac +
+    table[pos][interp.upper] * interp.upperfrac
 end
 
 # lin_interp(array::AbstractArray, pos) = begin
@@ -101,11 +103,38 @@ end
 # end
 # lin_interp(array, pos::Int) = array[pos]
 " Linear interpolation "
-@inline lin_interp(table, column, pos) = begin
+@inline lin_interp(column, pos) = begin
     int = floor(Int64, pos)
     frac::Float64 = pos - int
-    table[column][int] * (1 - frac) + table[column][int + 1] * frac
+    column[int+1] * (1 - frac) + column[int] * frac
 end
-@inline lin_interp(table, column, pos::Int) = table[column][pos]
+@inline lin_interp(column, pos::Int) = column[pos]
+
+Base.convert(::Type{MicroclimateTables}, x) =
+    MicroclimateTables(
+      Table(x.soil),
+      Table(x.shadsoil),
+      Table(x.metout),
+      Table(x.shadmet),
+      Table(x.soilmoist),
+      Table(x.shadmoist),
+      Table(x.humid),
+      Table(x.shadhumid),
+      Table(x.soilpot),
+      Table(x.shadpot),
+      Table(x.plant),
+      Table(x.shadplant),
+      x.RAINFALL,
+      x.dim,
+      x.ALTT,
+      x.REFL,
+      x.MAXSHADES,
+      x.longlat,
+      x.nyears,
+      x.timeinterval,
+      x.minshade,
+      x.maxshade,
+      x.DEP
+    )
 
 end # module
