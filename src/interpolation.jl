@@ -37,8 +37,8 @@ end
 
 " Interpolate between two layers of environmental data. "
 interp_layer(interp::LinearLayerInterpolator, layers, i) =
-    layers[interp.layer - 1][i] * (oneunit(interp.frac) - interp.frac) +
-    layers[interp.layer][i] * interp.frac
+    lin_interp(layers[interp.layer - 1], i) * (oneunit(interp.frac) - interp.frac) +
+    lin_interp(layers[interp.layer], i) * interp.frac
 
 layermax(interp::LinearLayerInterpolator, layers, i) = begin
     val = layers[1][pos]
@@ -56,11 +56,11 @@ weightedmean(layers, height, i) = begin
         if h < layer_bounds[l]
             # add the last, fractional layer
             frac = 1 - ((layer_bounds[l] - h) / layer_size[l])
-            wmean + layers[l][i] * layer_size[l] / h * frac
+            wmean + lin_interp(layers[l], i) * layer_size[l] / h * frac
             break
         end
         # multiply layer value by the fraction of height covered by the layer
-        wmean += layers[l][i] * layer_size[l] / h
+        wmean += lin_interp(layers[l], i) * layer_size[l] / h
     end
     wmean
 end

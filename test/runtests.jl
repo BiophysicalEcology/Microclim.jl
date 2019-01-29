@@ -8,7 +8,7 @@ rad = [10000, 9000]
 snow = [10, 9]
 airt = ([250], [300])
 ws = ([20, 30], [30, 40])
-rh = ([70, 50], [80, 60])
+rh = ([700, 500], [800, 600])
 soilt = ([200,190], [180,170], [160,150], [140,130], [120,110], [100,90], [80,70], [60,50])
 soilwp = ([-1000.0], [-2000])
 soilwc = ([200, 400], [300, 500], [200, 400], [300, 500], [200, 400], [300, 500], [200, 400], [300, 500])
@@ -38,17 +38,17 @@ end
 
 @testset "MicroclimPoint" begin
     env = MicroclimPoint(rad, snow, airt, rh, ws, soilt, soilwp, soilwc)
+    half = (1.2m - 0.01m) / 2 + 0.01m
 
-    @test radiation(env, 1) == 1000.0W*m^-2
-    @test_broken snowdepth(env, 1) == 1m
+    @test radiation(env, lin_interp_range(1.2m), 1) == 1000.0W*m^-2
+    @test_broken snowdepth(env, lin_interp_range(1.2m), 1) == 1m
 
     @testset "ranges interpolate" begin
-        half = (1.2m - 0.01m) / 2 + 0.01m
         @test airtemperature(env, lin_interp_range(0.01m), 1) == 25.0°C |> K
         @test airtemperature(env, lin_interp_range(half), 1) == 27.5°C |> K
         @test airtemperature(env, lin_interp_range(1.2m), 1) == 30.0°C |> K
         @test windspeed(env, lin_interp_range(1.2m), 2) == 4.0m*s^-1
-        @test relhumidity(env, lin_interp_range(1.2m), 2) == 0.06
+        @test relhumidity(env, lin_interp_range(1.2m), 2) == 0.6
     end
 
     @testset "increments interpolate" begin
@@ -63,6 +63,11 @@ end
         @test soilwatercontent(env, lin_interp_increment(0.0m), 2) == 0.4
     end
 
+    @testset "float indices are linearly interpolated in the time dimension" begin
+        @test windspeed(env, lin_interp_range(1.2m), 1.5) == 3.5m*s^-1
+        @test relhumidity(env, lin_interp_range(1.2m), 1.5) == 0.7
+        @test relhumidity(env, lin_interp_range(half), 1.5) == 0.65
+    end
 
     @testset "handles heights larger than avbailable" begin
         @test soiltemperature(env, lin_interp_increment(2.0m), 1) == 6.0°C |> K

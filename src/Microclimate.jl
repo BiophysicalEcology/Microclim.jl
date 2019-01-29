@@ -97,31 +97,27 @@ include("netcdf.jl")
 
 
 radiation(env::AbstractMicroclimEnvironment) = env.radiation
-radiation(env::AbstractMicroclimPoint, i::Integer) = radiation(env)[i]
-radiation(env::AbstractMicroclimPoint, i::AbstractFloat) = lin_interp(radiation(env), i)
-radiation(env::AbstractMicroclimPoint, interp, i::Integer) = radiation(env, i)
+radiation(env::AbstractMicroclimPoint, interp, i) = lin_interp(radiation(env), i)
 
 snowdepth(env::AbstractMicroclimEnvironment) = env.snowdepth
-snowdepth(env::AbstractMicroclimPoint, i::AbstractFloat) = lin_interp(interp, snowdepth(env), i)
-snowdepth(env::AbstractMicroclimPoint, i::Integer) = snowdepth(env)[i]
-snowdepth(env::AbstractMicroclimPoint, interp, i::Integer) = snowdepth(env, i)
+snowdepth(env::AbstractMicroclimPoint, interp, i) = lin_interp(snowdepth(env), i)
 
 airtemperature(env::AbstractMicroclimEnvironment) = env.airtemperature
-airtemperature(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, airtemperature(env), i)
+airtemperature(env::AbstractMicroclimPoint, interp, i) = interp_layer(interp, airtemperature(env), i)
 
 relhumidity(env::AbstractMicroclimEnvironment) = env.relhumidity
-relhumidity(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, relhumidity(env), i)
+relhumidity(env::AbstractMicroclimPoint, interp, i) = interp_layer(interp, relhumidity(env), i)
 
 windspeed(env::AbstractMicroclimEnvironment) = env.windspeed
-windspeed(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, windspeed(env), i)
+windspeed(env::AbstractMicroclimPoint, interp, i) = interp_layer(interp, windspeed(env), i)
 
 soiltemperature(env::AbstractMicroclimEnvironment) = env.soiltemperature
-soiltemperature(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, soiltemperature(env), i)
+soiltemperature(env::AbstractMicroclimPoint, interp, i) = interp_layer(interp, soiltemperature(env), i)
 
 soilwaterpotential(env::AbstractMicroclimEnvironment) = env.soilwaterpotential
-soilwaterpotential(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, soilwaterpotential(env), i)
+soilwaterpotential(env::AbstractMicroclimPoint, interp, i) = interp_layer(interp, soilwaterpotential(env), i)
 
 soilwatercontent(env::AbstractMicroclimEnvironment) = env.soilwatercontent
-soilwatercontent(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, soilwatercontent(env), i)
+soilwatercontent(env::AbstractMicroclimPoint, interp, i) = interp_layer(interp, soilwatercontent(env), i)
 
 end # module
