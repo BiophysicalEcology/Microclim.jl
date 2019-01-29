@@ -82,6 +82,9 @@ end
         @test weightedmean(soilwatercontent(env), 1.5m, 1) == max
         @test weightedmean(soilwatercontent(env), 2.0m, 1) == max
     end
+    @testset "max" begin
+        @test layermax(soiltemperature(env), lin_interp_increment(2.0m), 1) == 20.0°C |> K
+    end
 end
 
 end

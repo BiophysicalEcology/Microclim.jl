@@ -23,8 +23,7 @@ lin_interp_increment(height) = begin
         end
     end
     # Otherwise it's taller/deeper than we have data, so use the largest we have.
-    mx = length(increments)
-    LinearLayerInterpolator(mx, 1.0)
+    LinearLayerInterpolator(lastindex(increments), 1.0)
 end
 
 lin_interp_range(height) = begin
@@ -40,17 +39,17 @@ interp_layer(interp::LinearLayerInterpolator, layers, i) =
     lin_interp(layers[interp.layer - 1], i) * (oneunit(interp.frac) - interp.frac) +
     lin_interp(layers[interp.layer], i) * interp.frac
 
-layermax(interp::LinearLayerInterpolator, layers, i) = begin
-    val = layers[1][pos]
-    for l = 2:interp.upper
+layermax(layers, interp::LinearLayerInterpolator, i) = begin
+    val = layers[1][i]
+    for l = 2:interp.layer
         val = max(val, layers[l][i])
     end
+    val
 end
 
 weightedmean(layers, height, i) = begin
     wmean = zero(layers[1][1])
     h = min(height, max_height) 
-    layer = 1
     # sum all layers < height, after size adjustment
     for l = 1:length(layer_bounds)
         if h < layer_bounds[l]
