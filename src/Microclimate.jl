@@ -1,140 +1,127 @@
 module Microclimate
 
-using DataFrames,
-      TypedTables, 
-      Unitful
+using Unitful, NCDatasets
+using Unitful: W, m, °C, hr, mol, K, s, J, Mg, g, kg, L, kPa, Pa
 
-import Base: convert
-
-export LayerInterp,
-       layer_interp,
+export AbstractEnvironment, 
+       AbstractMicroclimEnvironment,
+       AbstractMicroclimGrid, MicroclimGrid, 
+       AbstractMicroclimPoint, MicroclimPoint,
+       radiation, snowdepth, airtemperature, relhumidity, windspeed,
+       soiltemperature, soilwaterpotential, soilwatercontent,
+       LinearLayerInterpolator,
+       interp_layer,
+       interp_increment, interp_range,
        lin_interp,
-       MicroclimateTables,
-       MicroclimateData
+       weightedmean,
+       layermax,
+       load_grid,
+       load_point
 
-const microclimate_increments = (0.0,2.5,5.0,10.0,15.0,20.0,30.0,50.0,100.0,200.0) .* Unitful.cm
 
-abstract type AbstractMicroclimateData end
+abstract type AbstractEnvironment end
+abstract type AbstractMicroclimEnvironment <: AbstractEnvironment end
+abstract type AbstractMicroclimGrid <: AbstractMicroclimEnvironment end
+abstract type AbstractMicroclimPoint <: AbstractMicroclimEnvironment end
 
-struct MicroclimateData <: AbstractMicroclimateData
-    soil::DataFrame
-    shadsoil::DataFrame
-    metout::DataFrame
-    shadmet::DataFrame
-    soilmoist::DataFrame
-    shadmoist::DataFrame
-    humid::DataFrame
-    shadhumid::DataFrame
-    soilpot::DataFrame
-    shadpot::DataFrame
-    plant::DataFrame
-    shadplant::DataFrame
-    RAINFALL::Vector{Float64}
-    dim::Int
-    ALTT::Float64
-    REFL::Float64
-    MAXSHADES::Vector{Float64}
-    longlat::Vector{Float64}
-    nyears::Int
-    timeinterval::Int
-    minshade::Float64
-    maxshade::Float64
-    DEP::Vector{Float64}
+struct MicroclimGrid{R,S,AT,RH,V,ST,WP,WC} <: AbstractMicroclimGrid
+    radiation::R
+    snowdepth::S
+    airtemperature::AT
+    relhumidity::RH
+    windspeed::V
+    soiltemperature::ST
+    soilwaterpotential::WP
+    soilwatercontent::WC
 end
 
-struct MicroclimateTables{A,B,C,D,E,F,G,H,I,J,K,L} <: AbstractMicroclimateData
-    soil::A
-    shadsoil::B
-    metout::C
-    shadmet::D
-    soilmoist::E
-    shadmoist::F
-    humid::G
-    shadhumid::H
-    soilpot::I
-    shadpot::J
-    plant::K
-    shadplant::L
-    RAINFALL::Vector{Float64}
-    dim::Int
-    ALTT::Float64
-    REFL::Float64
-    MAXSHADES::Vector{Float64}
-    longlat::Vector{Float64}
-    nyears::Int
-    timeinterval::Int
-    minshade::Float64
-    maxshade::Float64
-    DEP::Vector{Float64}
+struct MicroclimPoint{R,S,AT,RH,V,ST,WP,WC} <: AbstractMicroclimPoint
+    radiation::R
+    snowdepth::S
+    airtemperature::AT
+    relhumidity::RH
+    windspeed::V
+    soiltemperature::ST
+    soilwaterpotential::WP
+    soilwatercontent::WC
 end
 
+MicroclimPoint(radiation, snowdepth, airtemperature, relhumidity, windspeed,
+               soiltemperature, soilwaterpotential, soilwatercontent) = begin
+    fields = (to_radiation.(radiation),
+              (), # to_snowdepth.(snowdepth),
+              map(x -> to_airtemperature.(x), airtemperature),
+              map(x -> to_relhumidity.(x), relhumidity),
+              map(x -> to_windspeed.(x), windspeed),
+              map(x -> to_soiltemperature.(x), soiltemperature),
+              map(x -> to_soilwaterpotential.(x), soilwaterpotential),
+              map(x -> to_soilwatercontent.(x), soilwatercontent))
 
-struct LayerInterp
-    lower::Int
-    upper::Int
-    lowerfrac::Float64
-    upperfrac::Float64
+    MicroclimPoint{typeof.(fields)...}(fields...)
 end
 
-" Calculate current interpolation layers and fraction from NicheMapR data"
-LayerInterp(height) = begin
-    for (i, upper) in enumerate(microclimate_increments)
-        if upper > height
-            lower = microclimate_increments[i - 1]
-            p = (height-lower)/(upper-lower)
-            return LayerInterp(i + 1, i + 2, p, 1.0 - p)
-        end
-    end
-    # Otherwise its taller/deeper than we have data, use the largest we have.
-    max = length(microclimate_increments) + 2
-    LayerInterp(max, max, 1.0, 0.0)
+MicroclimPoint(radiation, snowdepth, airtemperature, relhumidity, windspeed,
+               soiltemperature, soilwaterpotential, soilwatercontent,
+               i::CartesianIndex) = begin
+    fields = (to_radiation.(radiation[i, :]),
+              (), # to_snowdepth.(snowdepth[i, :]),
+              map(x -> to_airtemperature.(x[i, :]), airtemperature),
+              map(x -> to_relhumidity.(x[i, :]), relhumidity),
+              map(x -> to_windspeed.(x[i, :]), windspeed),
+              map(x -> to_soiltemperature.(x[i, :]), soiltemperature),
+              map(x -> to_soilwaterpotential.(x[i, :]), soilwaterpotential),
+              map(x -> to_soilwatercontent.(x[i, :]), soilwatercontent))
+
+    MicroclimPoint{typeof.(fields)...}(fields...)
 end
 
-" Interpolate between two layers of environmental data. "
-layer_interp(interp, table, pos) = begin
-    table[pos][interp.lower] * interp.lowerfrac +
-    table[pos][interp.upper] * interp.upperfrac
+MicroclimPoint(env::AbstractMicroclimGrid, i::CartesianIndex) = begin
+    MicroclimPoint(radiation(env), snowdepth(env), airtemperature(env),
+                   relhumidity(env), windspeed(env), soiltemperature(env),
+                   soilwaterpotential(env), soilwatercontent(env), i)
 end
 
-# lin_interp(array::AbstractArray, pos) = begin
-#     int = floor(Int64, pos)
-#     frac::Float64 = pos - int
-#     array[int]::Float64 * (1 - frac) + array[int + 1]::Float64 * frac
-# end
-# lin_interp(array, pos::Int) = array[pos]
-" Linear interpolation "
-@inline lin_interp(column, pos) = begin
-    int = floor(Int64, pos)
-    frac::Float64 = pos - int
-    column[int+1] * (1 - frac) + column[int] * frac
-end
-@inline lin_interp(column, pos::Int) = column[pos]
+# unit conversions
+to_radiation(x) = x * 0.1W*m^-2
+to_snowdepth(x) = x * 0.1m
+to_airtemperature(x) = x * 0.1 * °C |> K
+to_relhumidity(x) = x * 0.001
+to_windspeed(x) = x * 0.1m*s^-1
+to_soilwaterpotential(x) = x * kPa
+to_soiltemperature(x) = x * 0.1 * °C |> K
+to_soilwatercontent(x) = x * 0.001
 
-Base.convert(::Type{MicroclimateTables}, x) =
-    MicroclimateTables(
-      Table(x.soil),
-      Table(x.shadsoil),
-      Table(x.metout),
-      Table(x.shadmet),
-      Table(x.soilmoist),
-      Table(x.shadmoist),
-      Table(x.humid),
-      Table(x.shadhumid),
-      Table(x.soilpot),
-      Table(x.shadpot),
-      Table(x.plant),
-      Table(x.shadplant),
-      x.RAINFALL,
-      x.dim,
-      x.ALTT,
-      x.REFL,
-      x.MAXSHADES,
-      x.longlat,
-      x.nyears,
-      x.timeinterval,
-      x.minshade,
-      x.maxshade,
-      x.DEP
-    )
+
+include("interpolation.jl")
+include("netcdf.jl")
+
+
+radiation(env::AbstractMicroclimEnvironment) = env.radiation
+radiation(env::AbstractMicroclimPoint, i::Integer) = radiation(env)[i]
+radiation(env::AbstractMicroclimPoint, i::AbstractFloat) = lin_interp(radiation(env), i)
+radiation(env::AbstractMicroclimPoint, interp, i::Integer) = radiation(env, i)
+
+snowdepth(env::AbstractMicroclimEnvironment) = env.snowdepth
+snowdepth(env::AbstractMicroclimPoint, i::AbstractFloat) = lin_interp(interp, snowdepth(env), i)
+snowdepth(env::AbstractMicroclimPoint, i::Integer) = snowdepth(env)[i]
+snowdepth(env::AbstractMicroclimPoint, interp, i::Integer) = snowdepth(env, i)
+
+airtemperature(env::AbstractMicroclimEnvironment) = env.airtemperature
+airtemperature(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, airtemperature(env), i)
+
+relhumidity(env::AbstractMicroclimEnvironment) = env.relhumidity
+relhumidity(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, relhumidity(env), i)
+
+windspeed(env::AbstractMicroclimEnvironment) = env.windspeed
+windspeed(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, windspeed(env), i)
+
+soiltemperature(env::AbstractMicroclimEnvironment) = env.soiltemperature
+soiltemperature(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, soiltemperature(env), i)
+
+soilwaterpotential(env::AbstractMicroclimEnvironment) = env.soilwaterpotential
+soilwaterpotential(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, soilwaterpotential(env), i)
+
+soilwatercontent(env::AbstractMicroclimEnvironment) = env.soilwatercontent
+soilwatercontent(env::AbstractMicroclimPoint, interp, i::Integer) = interp_layer(interp, soilwatercontent(env), i)
 
 end # module
