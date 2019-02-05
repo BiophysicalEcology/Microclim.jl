@@ -6,30 +6,62 @@ const layers_2 = ("1", "120")
 
 
 " Load multiple years for an index "
-load_point(basepath, years, i::CartesianIndex) = MicroclimPoint(load_microclim(basepath, years, i)...)
+load_point(basepath, years, shade, i::CartesianIndex) = 
+    MicroclimPoint(load_microclim(basepath, years, shade, i)...)
 
 " Load grids for a single year "
-load_grid(basepath, year::Int) = MicroclimGrid(load_microclim(basepath, year)...)
+load_grid(basepath, shade, year::Int) = MicroclimGrid(load_microclim(basepath, shade, year)...)
+
+checkdir(loader, basepath, file) = begin
+    if isdir(joinpath(basepath, file))
+        loader()
+    else
+        ()
+    end
+end
 
 """
 Generic microcliate loader. An Int year and no args will return a MicroclimGrid
 with full raster layers for asingle year. A range of years within 1990:2017 and a 
 CartesianIndex in args will return a MicroclimPoint.
 """
-load_microclim(basepath, years, args...) = begin
+load_microclim(basepath, years, shade, args...) = begin
     check_year(years)
 
-    radiation = load_file(basepath, "SOLR", years, args...)
-    snowdepth = ()
-    airtemperature = load_file(basepath, (n, y) -> "Tair1cm_0pctShade/$(n)_0pctShade_$(y).nc", "TA1cm", years, args...),
-                     load_file(basepath, (n, y) -> "Tair120cm/$(n)_$(y).nc", "TA120cm", years, args...)
-    relhumidity = load_file(basepath, (n, y) -> "$(n)_0pctShade/$(n)_0pctShade_$(y).nc", "RH1cm", years, args...),
-                  load_file(basepath, "RH120cm", years, args...)
-    windspeed = load_file(basepath, "V1cm", years, args...),
-                load_file(basepath, "V120cm", years, args...)
-    soiltemperature = load_folder(basepath, "soil", layers_8, years, args...)
-    soilwaterpotential = load_folder(basepath, "pot", layers_8, years, args...)
-    soilwatercontent = ()
+    radiation = checkdir(basepath, "SOLR") do
+        load_file(basepath, "SOLR", years, args...)
+    end
+
+    snowdepth = checkdir(basepath, "SNOWDEP_$(shade)pctShade") do
+        load_file(basepath, (n, y) -> "$(n)_$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", "SNOWDEP", years, args...)
+    end
+
+    airtemperature = checkdir(basepath, "Tair120cm") do
+        load_file(basepath, (n, y) -> "Tair1cm_$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", "TA1cm", years, args...),
+        load_file(basepath, (n, y) -> "Tair120cm/$(n)_$(y).nc", "TA120cm", years, args...)
+    end
+
+    relhumidity = checkdir(basepath, "RH120cm") do
+        load_file(basepath, (n, y) -> "$(n)_$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", "RH1cm", years, args...),
+        load_file(basepath, "RH120cm", years, args...)
+    end
+
+    windspeed = checkdir(basepath, "V120cm") do
+        load_file(basepath, "V1cm", years, args...),
+        load_file(basepath, "V120cm", years, args...)
+    end
+
+    soiltemperature = checkdir(basepath, "soil$(shade)cm_$(shade)pctShade") do
+        load_folder(basepath, "soil", layers_8, years, shade, args...)
+    end
+
+    soilwaterpotential =  checkdir(basepath, "pot$(shade)cm_$(shade)pctShade") do
+        load_folder(basepath, "pot", layers_8, years, shade, args...)
+    end
+
+    soilwatercontent = checkdir(basepath, "moist$(shade)cm_$(shade)pctShade") do
+        load_folder(basepath, "moist", layers_8, years, shade, args...)
+    end
 
     radiation, snowdepth, airtemperature, relhumidity, windspeed, 
     soiltemperature, soilwaterpotential, soilwatercontent
@@ -45,8 +77,8 @@ load_file(basepath::String, formatter, name::String, years, args...) =
 load_file(basepath::String, name::String, years, args...) =
     load_variable(basepath, (n, y) -> "$(n)/$(n)_$(y).nc", name, name, years, args...)
 
-load_folder(basepath, name, layers, years, args...) =
-    tuple((load_variable(basepath, (n, y) -> "$(n)$(l)cm_0pctShade/$(n)$(l)cm_0pctShade_$(y).nc", name,
+load_folder(basepath, name, layers, years, shade, args...) =
+    tuple((load_variable(basepath, (n, y) -> "$(n)$(l)cm_$(shade)pctShade/$(n)$(l)cm_$(shade)pctShade_$(y).nc", name,
                          "$(name)$(l)cm", years, args...) for l in layers)...)
 
 
@@ -56,7 +88,10 @@ load_variable(basepath::String, formatter, name::String, varname::String, years,
     combined_dataset = Float64[]
     for year in years
         path = joinpath(basepath, formatter(name, year))
-        annual_datset = Dataset(path)[varname][i, :]
+        println(path)
+        println(varname)
+        annual_datset = [Dataset(path)[varname][i, :]...]
+        println(typeof(annual_datset))
         combined_dataset = vcat(combined_dataset, annual_datset)
     end
     combined_dataset
