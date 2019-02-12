@@ -1,7 +1,7 @@
 module MicroclimateTests
 
 using Microclimate, Unitful, Test
-using Microclimate: range_interpolator, increment_interpolator, interp_layer, layer_sizes, 
+using Microclimate: range_interpolator, increment_interpolator, interp_layer, layer_sizes,
                     layer_props, layer_bounds, max_height, lin_interp
 using Unitful: W, m, °C, K, s, g, L, kPa
 
@@ -11,14 +11,14 @@ const nextlayer = 2.0m
 
 rad = [1000.0, 900.0]W*m^-2
 snow = [1.0, 0.9]m
-airt = [25.0 24.0; 30.0 29.0]°C
+airt = [25.0 24.0; 30.0 29.0]°C .|> K
 ws = [1.0 2.0; 3.0 4.0]m*s^-1
 rh = [0.7 0.5; 0.8 0.6]
 soilt = [20.0 19.0 18.0 17.0 16.0 15.0 14.0 13.0;
-         12.0 11.0 10.0 9.0  8.0  7.0  6.0  5.0]°C
+         12.0 11.0 10.0 9.0  8.0  7.0  6.0  5.0]°C .|> K
 soilwp = [-100.0 -90.0 -120.0 -80.0 -110.0 -70.0 -130.0 -60.0;
           -100.0 -90.0 -120.0 -80.0 -110.0 -70.0 -130.0 -60.0]kPa
-soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3; 
+soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
           0.4 0.5 0.4 0.5 0.4 0.5 0.4 0.5]
 
 
@@ -36,7 +36,7 @@ soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
 
     @testset "ranges interpolate" begin
         @test airtemperature(env, range_interpolator(env, 0.01m), 1) |> °C == 25.0°C
-        @test airtemperature(env, range_interpolator(env, half), 1) |> °C == 24.5°C 
+        @test airtemperature(env, range_interpolator(env, half), 1) |> °C == 24.5°C
         @test airtemperature(env, range_interpolator(env, 1.2m), 1) |> °C == 24.0°C
         @test windspeed(env, range_interpolator(env, 1.2m), 2) == 4.0m*s^-1
         @test relhumidity(env, range_interpolator(env, 1.2m), 2) == 0.6
@@ -61,7 +61,7 @@ soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
 
     @testset "handles heights larger than avbailable" begin
         @test soiltemperature(env, increment_interpolator(env, 2.0m), 1) == 13.0°C
-        @test airtemperature(env, range_interpolator(env, 2.0m), 1) == 24.0°C
+        @test airtemperature(env, range_interpolator(env, 2.0m), 1) |> °C == 24.0°C
     end
 
     @testset "weighted mean" begin
@@ -77,7 +77,7 @@ soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
     end
 
     @testset "max" begin
-        @test layermax(soiltemperature(env), increment_interpolator(env, 2.0m), 1) == 20.0°C |> K
+        @test layermax(soiltemperature(env), increment_interpolator(env, 2.0m), 1) |> °C == 20.0°C
     end
 
 end
