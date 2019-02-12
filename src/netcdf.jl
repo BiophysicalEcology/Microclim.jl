@@ -1,16 +1,16 @@
-# load32(fpath, varname) = replace(load_netcdf(fpath, varname), -32768=>missing)
-# load64(fpath, varname) = replace(load_netcdf(fpath, varname), -2147483647=>missing)
-
-const layers_8 = ("0", "2.5", "5", "10", "20", "30", "50", "100")
-const layers_2 = ("1", "120")
+const layerincrements = (0.0, 0.025, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0) .* m
+const layernames = ("0", "2.5", "5", "10", "20", "30", "50", "100")
+const nextlayer = 2.0m
+const layerrange = (0.01, 1.20) .* m
 
 
 " Load multiple years for an index "
 load_point(basepath, years, shade, i::CartesianIndex) = 
-    MicroclimPoint(load_microclim(basepath, years, shade, i)...)
+    MicroclimPoint{layerincrements,nextlayer,layerrange}(load_microclim(basepath, years, shade, i)...)
 
 " Load grids for a single year "
-load_grid(basepath, shade, year::Int) = MicroclimGrid(load_microclim(basepath, shade, year)...)
+load_grid(basepath, shade, years) = 
+    MicroclimGrid{layerincrements,nextlayer,layerrange}(load_microclim(basepath, shade, years)...)
 
 checkdir(loader, basepath, file) = begin
     if isdir(joinpath(basepath, file))
@@ -52,15 +52,16 @@ load_microclim(basepath, years, shade, args...) = begin
     end
 
     soiltemperature = checkdir(basepath, "soil$(shade)cm_$(shade)pctShade") do
-        load_folder(basepath, "soil", layers_8, years, shade, args...)
+        load_folder(basepath, "soil", layernames, years, shade, args...)
     end
 
-    soilwaterpotential =  checkdir(basepath, "pot$(shade)cm_$(shade)pctShade") do
-        load_folder(basepath, "pot", layers_8, years, shade, args...)
+    soilwaterpotential = checkdir(basepath, "pot$(shade)cm_$(shade)pctShade") do
+        load_folder(basepath, "pot", layernames, years, shade, args...)
     end
 
     soilwatercontent = checkdir(basepath, "moist$(shade)cm_$(shade)pctShade") do
-        load_folder(basepath, "moist", layers_8, years, shade, args...)
+        # load_folder(basepath, "moist", layernames, years, shade, args...)
+        ()
     end
 
     radiation, snowdepth, airtemperature, relhumidity, windspeed, 
@@ -83,23 +84,38 @@ load_folder(basepath, name, layers, years, shade, args...) =
 
 
 " load timeseries for a single index "
-load_variable(basepath::String, formatter, name::String, varname::String, years, i::CartesianIndex) = begin
+load_variable(basepath::String, formatter, name::String, varname::String, years,  i::CartesianIndex) = begin
     println("Adding $varname for $years at $i")
-    combined_dataset = Float64[]
+    combined_data = Float64[]
     for year in years
         path = joinpath(basepath, formatter(name, year))
-        println(path)
-        println(varname)
-        annual_datset = [Dataset(path)[varname][i, :]...]
-        println(typeof(annual_datset))
-        combined_dataset = vcat(combined_dataset, annual_datset)
+        println(path, "\n", varname)
+        year_data = [Dataset(path)[varname][i, :]...]
+        println(typeof(year_data))
+        combined_data = vcat(combined_data, year_data)
     end
-    combined_dataset
-end
-" load timeseries for the whole grid "
-load_variable(basepath::String, formatter, name::String, varname::String, year::Integer) = begin
-    println("Adding $varname for $year")
-    path = joinpath(basepath, formatter(name, year))
-    Dataset(path)[varname]
+    combined_data
 end
 
+# " load timeseries for a single index "
+load_variable(basepath::String, formatter, name::String, varname::String, years) = begin
+    println("Adding $varname for $years for complete grid")
+
+    # Initialise for the first year, as the eltype is variable
+    path1 = joinpath(basepath, formatter(name, years[1]))
+    years_vector = [Dataset(path1)[varname]]
+
+    # Add the rest of the years, if there are any
+    for i in 2:length(years)
+        path = joinpath(basepath, formatter(name, years[i]))
+        push!(years_vector, get_yeardata(path, varname))
+    end
+
+    # Return a vector of NCDatasets for each year
+    years_vector
+end
+
+function get_yeardata(path, varname) 
+    println("Retrieving ", varname, " from ", path)
+    Dataset(path)[varname]
+end
