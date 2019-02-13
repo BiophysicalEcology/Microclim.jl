@@ -116,7 +116,7 @@ MicroclimPoint{I,A,R}(radiation::Vector, snowdepth::Vector, airtemperature::Tupl
     println("radiation...")
     rad = to_radiation.(catpoint(radiation, i) .* 0.1)
     println("snowdepth...")
-    snow = to_snowdepth.(catpoint(snowdepthr, i) .* 0.1)
+    snow = to_snowdepth.(catpoint(snowdepth, i) .* 0.1)
     println("airtemperature...")
     airt = to_airtemperature.(catpoint(airtemperature, i) .* 0.1)
     println("relhumidity...")
