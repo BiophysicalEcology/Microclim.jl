@@ -116,7 +116,7 @@ MicroclimPoint{I,A,R}(radiation::Vector, snowdepth::Vector, airtemperature::Tupl
     println("radiation...")
     rad = to_radiation.(catpoint(radiation, i) .* 0.1)
     println("snowdepth...")
-    snow = to_snowdepth.(catpoint(snowdepth, i) .* 0.1)
+    snow = to_snowdepth.(catpoint(snowdepth, i) .* 0.001)
     println("airtemperature...")
     airt = to_airtemperature.(catpoint(airtemperature, i) .* 0.1)
     println("relhumidity...")
@@ -135,10 +135,6 @@ MicroclimPoint{I,A,R}(radiation::Vector, snowdepth::Vector, airtemperature::Tupl
     MicroclimPoint{I,A,R,typeof.(args)...}(args...)
 end
 
-@inline catpoint(layers::Tuple, i::CartesianIndex) =
-    cat([[cat((getindex(y, i, :) for y in l)..., dims=1)...] for l in layers]..., dims=2)
-@inline catpoint(layers::Vector, i::CartesianIndex) = cat((getindex(y, i, :) for y in layers)..., dims=1)
-
 # From MiriclimGrid and a cartesian index
 MicroclimPoint(env::AbstractMicroclimGrid{I,A,R}, i::CartesianIndex) where {I,A,R} =
     MicroclimPoint{I,A,R}(radiation(env), snowdepth(env), airtemperature(env),
@@ -148,6 +144,11 @@ MicroclimPoint(env::AbstractMicroclimGrid{I,A,R}, i::CartesianIndex) where {I,A,
 struct MicroclimateLayers{L<:Tuple}
     layers::L
 end
+
+
+include("interpolation.jl")
+include("netcdf.jl")
+
 
 # unit conversions
 to_radiation(x) = x * W*m^-2
@@ -164,9 +165,10 @@ get_increments(layers::AbstractMicroclimEnvironment{I,A,R}) where {I,A,R} = I
 get_nextlayer(layers::AbstractMicroclimEnvironment{I,A,R}) where {I,A,R} = A
 get_range(layers::AbstractMicroclimEnvironment{I,A,R}) where {I,A,R} = R
 
+@inline catpoint(layers::Tuple, i::CartesianIndex) =
+    cat([[cat((getindex(y, i, :) for y in l)..., dims=1)...] for l in layers]..., dims=2)
+@inline catpoint(layers::Vector, i::CartesianIndex) = cat((getindex(y, i, :) for y in layers)..., dims=1)
 
-include("interpolation.jl")
-include("netcdf.jl")
 
 # Accessors for single layer data
 for name in (:radiation, :snowdepth)
