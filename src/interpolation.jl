@@ -20,7 +20,7 @@ LinearLayerInterpolators(env, height) =
 
 # Use recursion so the compiler does this with tuples. Huge performance improvement.
 @inline layer_sizes(env::MicroclimPoint{I,NL,R}) where {I,NL,R} = layer_sizes(zero(NL), I, NL)
-@inline layer_sizes(z, I::Tuple, NL) = (lsize(z, I[1], I[2]), layer_sizes(tail(I), NL)...)
+@inline layer_sizes(z, I::Tuple, NL) = (lsize(z, I[1], I[2]), layer_sizes(I, NL)...)
 @inline layer_sizes(I::Tuple, NL) = (lsize(I[1], I[2], I[3]), layer_sizes(tail(I), NL)...)
 @inline layer_sizes(I::Tuple{X,X}, NL) where X = (lsize(I[1], I[2], NL),)
 
@@ -30,7 +30,7 @@ LinearLayerInterpolators(env, height) =
 @inline layer_bounds(inc::Tuple{X,Vararg}, next) where X = (bound(inc[1], inc[2]), layer_bounds(tail(inc), next)...)
 @inline layer_bounds(inc::Tuple{X}, next) where X = (bound(inc[1], next),)
 
-@inline bound(a::Number, b::Number) = a + b / 2
+@inline bound(a::Number, b::Number) = (a + b) / 2
 
 
 @inline max_height(env) = sum(layer_sizes(env))
