@@ -1,5 +1,7 @@
 const water_fraction_to_M = 1.0m^3*m^-3 * 1kg*L^-1 / 18.0g*mol^-1
 
+using Base: tail
+
 
 abstract type AbstractLayerInterpolator end
 
@@ -16,26 +18,27 @@ end
 LinearLayerInterpolators(env, height) =
     LinearLayerInterpolators(range_interpolator(env, height), increment_interpolator(env, height), height)
 
+# Use recursion so the compiler does this with tuples. Huge performance improvement.
+@inline layer_sizes(env::MicroclimPoint{I,NL,R}) where {I,NL,R} = layer_sizes(zero(NL), I, NL)
+@inline layer_sizes(z, I::Tuple, NL) = (lsize(z, I[1], I[2]), layer_sizes(tail(I), NL)...)
+@inline layer_sizes(I::Tuple, NL) = (lsize(I[1], I[2], I[3]), layer_sizes(tail(I), NL)...)
+@inline layer_sizes(I::Tuple{X,X}, NL) where X = (lsize(I[1], I[2], NL),)
 
-layer_sizes(env) = begin
-    increments = get_increments(env)
-    next = get_nextlayer(env)
-    inc1 = (0.0m, increments..., next)
-    tuple(collect((inc1[i+1] + inc1[i])/2 - (inc1[i-1] + inc1[i])/2 for i in 2:length(increments)+1)...)
-end
+@inline lsize(a, b, c) = (c + b)  / 2 - (b + a) / 2
 
-layer_bounds(env) = begin
-    increments = get_increments(env)
-    next = get_nextlayer(env)
-    inc1 = (increments..., next)
-    tuple(collect((inc1[i+1] + inc1[i])/2 for i in 1:length(increments))...)
-end
-max_height(env) = sum(layer_sizes(env))
-layer_props(env) = layer_sizes(env) ./ max_height(env)
+@inline layer_bounds(env::MicroclimPoint{I,NL,R}) where {I,NL,R} = layer_bounds(I, NL)
+@inline layer_bounds(inc::Tuple{X,Vararg}, next) where X = (bound(inc[1], inc[2]), layer_bounds(tail(inc), next)...)
+@inline layer_bounds(inc::Tuple{X}, next) where X = (bound(inc[1], next),)
+
+@inline bound(a::Number, b::Number) = a + b / 2
+
+
+@inline max_height(env) = sum(layer_sizes(env))
+@inline layer_props(env) = layer_sizes(env) ./ max_height(env)
 
 
 " Calculate current interpolation layers and fraction from NicheMapR data"
-increment_interpolator(env, height) = begin
+@inline increment_interpolator(env, height) = begin
     increments = get_increments(env)
     for (i, upper_height) in enumerate(increments)
         if upper_height > height
@@ -48,7 +51,7 @@ increment_interpolator(env, height) = begin
     LinearLayerInterpolator(lastindex(increments), 1.0)
 end
 
-range_interpolator(env, height) = begin
+@inline range_interpolator(env, height) = begin
     lower, upper = get_range(env)
     h = min(max(height, lower), upper)
     frac = (h - lower)/(upper - lower)
@@ -57,7 +60,7 @@ end
 
 
 " Interpolate between two layers of environmental data. "
-interp_layer(layers, interp, i) =
+@inline interp_layer(layers, interp, i) =
     lin_interp(layers, i, interp.layer - 1) * (oneunit(interp.frac) - interp.frac) +
     lin_interp(layers, i, interp.layer) * interp.frac
 
@@ -77,10 +80,10 @@ end
 @inline lin_interp(matrix::Matrix, i::Int, j) = matrix[i, j]
 
 
-weightedmean(env, layers, inpterp::LinearLayerInterpolators, i) = 
+@inline weightedmean(env, layers, inpterp::LinearLayerInterpolators, i) = 
     weightedmean(env, layers, inpterp.height, i)
 weightedmean(env, layers, height::Number, i) = begin
-    wmean = zero(layers[1][1])m
+    wmean = zero(layers[1][1])*m
     lbounds = layer_bounds(env)
     lsizes = layer_sizes(env)
     h = min(height, max_height(env))
@@ -99,7 +102,7 @@ weightedmean(env, layers, height::Number, i) = begin
     wmean / h
 end
 
-layermax(layers, interp, i) = begin
+@inline layermax(layers, interp, i) = begin
     val = layers[1][i]
     for l = 2:interp.layer
         val = max(val, layers[l][i])
