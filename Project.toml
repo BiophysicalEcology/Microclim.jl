@@ -1,0 +1,14 @@
+name = "Microclimate"
+uuid = "e0eb800d-4a9f-54ae-b0f8-217228d9d7c3"
+authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
+version = "0.0.0"
+
+[deps]
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
