@@ -89,10 +89,11 @@ end
 MicroclimInstant(microclim, height::Number, t) = MicroclimInstant(microclim, LinearLayerInterpolators(microclim, height), t)
 
 # From external data without units
-MicroclimPoint{I,A,R}(radiation::Vector{<:AbstractFloat}, snowdepth::Vector{<:AbstractFloat}, airtemperature::Matrix{<:AbstractFloat},
-               relhumidity::Matrix{<:AbstractFloat}, windspeed::Matrix{<:AbstractFloat},
-               soiltemperature::Matrix{<:AbstractFloat}, soilwaterpotential::Matrix{<:AbstractFloat},
-               soilwatercontent::Matrix{<:AbstractFloat}) where {I,A,R} = begin
+MicroclimPoint{I,A,R}(radiation::Vector{<:AbstractFloat}, snowdepth::Vector{<:AbstractFloat}, 
+                      airtemperature::Array{<:AbstractFloat}, relhumidity::Array{<:AbstractFloat}, 
+                      windspeed::Array{<:AbstractFloat}, soiltemperature::Array{<:AbstractFloat}, 
+                      soilwaterpotential::Array{<:AbstractFloat}, soilwatercontent::Array{<:AbstractFloat}
+                     ) where {I,A,R} = begin
 
     rad = to_radiation.(radiation)
     snow = to_snowdepth.(snowdepth)
@@ -165,6 +166,7 @@ get_increments(layers::AbstractMicroclimEnvironment{I,A,R}) where {I,A,R} = I
 get_nextlayer(layers::AbstractMicroclimEnvironment{I,A,R}) where {I,A,R} = A
 get_range(layers::AbstractMicroclimEnvironment{I,A,R}) where {I,A,R} = R
 
+@inline catpoint(layers::Tuple{}, i::CartesianIndex) = []
 @inline catpoint(layers::Tuple, i::CartesianIndex) =
     cat([[cat((getindex(y, i, :) for y in l)..., dims=1)...] for l in layers]..., dims=2)
 @inline catpoint(layers::Vector, i::CartesianIndex) = cat((getindex(y, i, :) for y in layers)..., dims=1)
