@@ -6,11 +6,11 @@ const layerrange = (0.01, 1.20) .* m
 
 " Load multiple years for an index "
 load_point(basepath, years, shade, i::CartesianIndex, skip=()) = 
-    MicroclimPoint{layerincrements,nextlayer,layerrange}(load_microclim(basepath, years, shade, skip, i)...)
+    MicroclimPoint{shade, layerincrements,nextlayer,layerrange}(load_microclim(basepath, years, shade, skip, i)...)
 
 " Load grids for a single year "
 load_grid(basepath, years, shade, skip=()) = 
-    MicroclimGrid{layerincrements,nextlayer,layerrange}(load_microclim(basepath, years, shade, skip)...)
+    MicroclimGrid{shade,layerincrements,nextlayer,layerrange}(load_microclim(basepath, years, shade, skip)...)
 
 ifhasdir(loader, basepath, file, empty) = 
     if isdir(joinpath(basepath, file))
@@ -113,5 +113,5 @@ end
 
 function get_yeardata(path, varname) 
     println("Retrieving ", varname, " from ", path)
-    Dataset(path)[varname]
+    Dataset(path)[varname][:,:,:]
 end

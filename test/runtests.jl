@@ -23,7 +23,7 @@ soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
 
 
 @testset "MicroclimPoint" begin
-    env = MicroclimPoint{layerincrements,nextlayer,layerrange}(rad, snow, airt, rh, ws, soilt, soilwp, soilwc)
+    env = MicroclimPoint{100,layerincrements,nextlayer,layerrange}(rad, snow, airt, rh, ws, soilt, soilwp, soilwc)
     half = (1.2m - 0.01m) / 2 + 0.01m
 
     @test all(layer_sizes(env) .≈ (0.0125, 0.025, 0.0375, 0.075, 0.1, 0.15, 0.35, 0.75) .* m)
@@ -83,7 +83,7 @@ soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
 end
 
 @testset "MicroclimInstant" begin
-    point = MicroclimPoint{layerincrements,nextlayer,layerrange}(rad, snow, airt, rh, ws, soilt, soilwp, soilwc)
+    point = MicroclimPoint{100,layerincrements,nextlayer,layerrange}(rad, snow, airt, rh, ws, soilt, soilwp, soilwc)
 
     instant = MicroclimInstant(point, 1.2m, 1)
     @test radiation(instant) == 1000W*m^-2
