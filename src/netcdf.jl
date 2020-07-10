@@ -1,16 +1,16 @@
-const layerincrements = (0.0, 0.025, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0) .* m
-const layernames = ("0", "2.5", "5", "10", "20", "30", "50", "100")
-const nextlayer = 2.0m
-const layerrange = (0.01, 1.20) .* m
+const LAYERINCREMENTS = (0.0, 0.025, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0) .* m
+const LAYERNAMES = ("0", "2.5", "5", "10", "20", "30", "50", "100")
+const NEXTLAYER = 2.0m
+const LAYERRANGE = (0.01, 1.20) .* m
 
 
 " Load multiple years for an index "
 load_point(basepath, years, shade, i::CartesianIndex, skip=()) = 
-    MicroclimPoint{shade, layerincrements,nextlayer,layerrange}(load_microclim(basepath, years, shade, skip, i)...)
+    MicroclimPoint{shade,LAYERINCREMENTS,NEXTLAYER,LAYERRANGE}(load_microclim(basepath, years, shade, skip, i)...)
 
 " Load grids for a single year "
 load_grid(basepath, years, shade, skip=()) = 
-    MicroclimGrid{shade,layerincrements,nextlayer,layerrange}(load_microclim(basepath, years, shade, skip)...)
+    MicroclimGrid{shade,LAYERINCREMENTS,NEXTLAYER,LAYERRANGE}(load_microclim(basepath, years, shade, skip)...)
 
 ifhasdir(loader, basepath, file, empty) = 
     if isdir(joinpath(basepath, file))
@@ -51,15 +51,15 @@ load_microclim(basepath, years, shade, skip, args...) = begin
     end
 
     soiltemperature = :soiltemperature in skip ? () : ifhasdir(basepath, "soil$(shade)cm_$(shade)pctShade", ()) do
-        load_folder(basepath, "soil", layernames, years, shade, args...)
+        load_folder(basepath, "soil", LAYERNAMES, years, shade, args...)
     end
 
     soilwaterpotential = :soilwaterpotential in skip ? () : ifhasdir(basepath, "pot$(shade)cm_$(shade)pctShade", ()) do
-        load_folder(basepath, "pot", layernames, years, shade, args...)
+        load_folder(basepath, "pot", LAYERNAMES, years, shade, args...)
     end
 
     soilwatercontent = :soilwatercontent in skip ? () : ifhasdir(basepath, "moist$(shade)cm_$(shade)pctShade", ()) do
-        load_folder(basepath, "moist", layernames, years, shade, args...)
+        load_folder(basepath, "moist", LAYERNAMES, years, shade, args...)
     end
 
     radiation, snowdepth, airtemperature, relhumidity, windspeed, 

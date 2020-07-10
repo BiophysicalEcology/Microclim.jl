@@ -11,16 +11,18 @@ const nextlayer = 2.0m
 
 rad = [1000.0, 900.0]W*m^-2
 snow = [1.0, 0.9]m
-airt = [25.0 24.0; 30.0 29.0]°C .|> K
-ws = [1.0 2.0; 3.0 4.0]m*s^-1
-rh = [0.7 0.5; 0.8 0.6]
-soilt = [20.0 19.0 18.0 17.0 16.0 15.0 14.0 13.0;
+airt = [25.0 24.0 
+        30.0 29.0]°C .|> K
+ws = [1.0 2.0
+      3.0 4.0]m*s^-1
+rh = [0.7 0.5 
+      0.8 0.6]
+soilt = [20.0 19.0 18.0 17.0 16.0 15.0 14.0 13.0
          12.0 11.0 10.0 9.0  8.0  7.0  6.0  5.0]°C .|> K
-soilwp = [-100.0 -90.0 -120.0 -80.0 -110.0 -70.0 -130.0 -60.0;
+soilwp = [-100.0 -90.0 -120.0 -80.0 -110.0 -70.0 -130.0 -60.0
           -100.0 -90.0 -120.0 -80.0 -110.0 -70.0 -130.0 -60.0]kPa
-soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
+soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3
           0.4 0.5 0.4 0.5 0.4 0.5 0.4 0.5]
-
 
 @testset "MicroclimPoint" begin
     env = MicroclimPoint{100,layerincrements,nextlayer,layerrange}(rad, snow, airt, rh, ws, soilt, soilwp, soilwc)
@@ -59,7 +61,7 @@ soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
         @test relhumidity(env, range_interpolator(env, half), 1.5) == 0.65
     end
 
-    @testset "handles heights larger than avbailable" begin
+    @testset "handles heights larger than available" begin
         @test soiltemperature(env, increment_interpolator(env, 2.0m), 1) == 13.0°C
         @test airtemperature(env, range_interpolator(env, 2.0m), 1) |> °C == 24.0°C
     end
@@ -83,8 +85,9 @@ soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3;
 end
 
 @testset "MicroclimInstant" begin
-    point = MicroclimPoint{100,layerincrements,nextlayer,layerrange}(rad, snow, airt, rh, ws, soilt, soilwp, soilwc)
-
+    point = MicroclimPoint{100,layerincrements,nextlayer,layerrange}(
+        rad, snow, airt, rh, ws, soilt, soilwp, soilwc
+    )
     instant = MicroclimInstant(point, 1.2m, 1)
     @test radiation(instant) == 1000W*m^-2
     @test snowdepth(instant) == 1.0m

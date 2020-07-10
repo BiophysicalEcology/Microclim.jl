@@ -44,7 +44,7 @@ LinearLayerInterpolators(env, height) =
         if upper_height > height
             lower_height = increments[i - 1]
             frac = (height - lower_height)/(upper_height - lower_height)
-            return LinearLayerInterpolator(i, frac)
+            return LinearLayerInterpolator(i - 1, frac)
         end
     end
     # Otherwise it's taller/deeper than we have data, so use the largest we have.
@@ -55,14 +55,14 @@ end
     lower, upper = get_range(env)
     h = min(max(height, lower), upper)
     frac = (h - lower)/(upper - lower)
-    LinearLayerInterpolator(2, frac)
+    LinearLayerInterpolator(1, frac)
 end
 
 
 " Interpolate between two layers of environmental data. "
 @inline interp_layer(layers, interp, i) =
-    lin_interp(layers, i, interp.layer - 1) * (oneunit(interp.frac) - interp.frac) +
-    lin_interp(layers, i, interp.layer) * interp.frac
+    lin_interp(layers, i, interp.layer) * (oneunit(interp.frac) - interp.frac) +
+    lin_interp(layers, i, interp.layer + 1) * interp.frac
 
 
 " Linear interpolation "
@@ -102,10 +102,14 @@ weightedmean(env, layers, height::Number, i) = begin
     wmean / h
 end
 
+
+@inline layermax(layers, x::MicroclimInstant) = layermax(layers, x.interp.increment, x.t)
+
 @inline layermax(layers, interp, i) = begin
-    val = layers[1][i]
+    i = floor(Int, i)
+    val = layers[i, 1]
     for l = 2:interp.layer
-        val = max(val, layers[l][i])
+        val = max(val, layers[i, l])
     end
     val
 end
