@@ -4,10 +4,10 @@ authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
 version = "0.0.0"
 
 [deps]
-NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
-Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 FieldDefaults = "49426c49-986f-5969-8844-d5cc96441cfc"
 FieldMetadata = "bf96fef3-21d2-5d20-8afa-0e7d4c32a885"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

@@ -40,15 +40,15 @@ LinearLayerInterpolators(env, height) =
 " Calculate current interpolation layers and fraction from NicheMapR data"
 @inline increment_interpolator(env, height) = begin
     increments = get_increments(env)
-    for (i, upper_height) in enumerate(increments)
-        if upper_height > height
-            lower_height = increments[i - 1]
-            frac = (height - lower_height)/(upper_height - lower_height)
+    for (i, height_upper) in enumerate(increments)
+        if height_upper > height
+            height_lower = increments[i - 1]
+            frac = (height - height_lower) / (height_upper - height_lower)
             return LinearLayerInterpolator(i - 1, frac)
         end
     end
     # Otherwise it's taller/deeper than we have data, so use the largest we have.
-    LinearLayerInterpolator(lastindex(increments), 1.0)
+    LinearLayerInterpolator(lastindex(increments) - 1, 1.0)
 end
 
 @inline range_interpolator(env, height) = begin

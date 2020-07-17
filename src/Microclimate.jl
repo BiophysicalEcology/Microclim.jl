@@ -4,6 +4,7 @@ using Unitful,
       NCDatasets, 
       FieldMetadata, 
       FieldDefaults
+
 using Unitful: W, m, °C, hr, mol, K, s, J, Mg, g, kg, L, kPa, Pa
 
 import FieldMetadata: default, units, limits, @units, @limits
@@ -132,21 +133,32 @@ MicroclimPoint{S,I,A,R}(radiation::Vector{<:AbstractFloat}, snowdepth::Vector{<:
     end
 end
 
-missing_otherwise(f, d) = any(ismissing.(d)) ? missing : f.(d) 
+missing_otherwise(f, d) =
+    (length(d) == 0 || any(ismissing.(d))) ? missing : f.(d) 
+
+missing_otherwise_cat(f, ds::Tuple, i) =
+    map(d -> missing_otherwise_cat(f, d, i), ds)
+missing_otherwise_cat(f, d, i) =
+    if length(d) == 0 
+        nothing
+    else
+        p = catpoint(d, i)
+        any(ismissing.(p)) ? missing : f.(p) 
+    end
 
 # From microclim dataset in tuples and a cartesian index
 # Requires conversion to float from Int
 MicroclimPoint{S,I,A,R}(radiation::Vector, snowdepth::Vector, airtemperature::Tuple,
                         relhumidity::Tuple, windspeed::Tuple, soiltemperature::Tuple,
                         soilwaterpotential::Tuple, soilwatercontent::Tuple, i::CartesianIndex) where {S,I,A,R} = begin
-    rad = missing_otherwise(to_radiation, catpoint(radiation, i) .* 0.1)
-    snow = missing_otherwise(to_snowdepth, catpoint(snowdepth, i) .* 0.001)
-    airt = missing_otherwise(to_airtemperature, catpoint(airtemperature, i) .* 0.1)
-    relh = missing_otherwise(to_relhumidity, catpoint(relhumidity, i) .* 0.001)
-    wind = missing_otherwise(to_windspeed, catpoint(windspeed, i) .* 0.1)
-    soilt = missing_otherwise(to_soiltemperature, catpoint(soiltemperature, i) .* 0.1)
-    soilwp = missing_otherwise(to_soilwaterpotential, catpoint(soilwaterpotential, i) .* 0.1)
-    soilwc = missing_otherwise(to_soilwatercontent, catpoint(soilwatercontent, i) .* 0.001)
+    rad = missing_otherwise_cat(x -> to_radiation(0.1x), radiation, i)
+    snow = missing_otherwise_cat(x -> to_snowdepth(0.001x), snowdepth, i)
+    airt = missing_otherwise_cat(x -> to_airtemperature(0.1x), airtemperature, i)
+    relh = missing_otherwise_cat(x -> to_relhumidity(0.001x), relhumidity, i)
+    wind = missing_otherwise_cat(x -> to_windspeed(0.1x), windspeed, i)
+    soilt = missing_otherwise_cat(x -> to_soiltemperature(0.1x), soiltemperature, i)
+    soilwp = missing_otherwise_cat(x -> to_soilwaterpotential(0.1x), soilwaterpotential, i)
+    soilwc = missing_otherwise_cat(x -> to_soilwatercontent(0.001x), soilwatercontent, i)
 
     args = (rad, snow, airt, relh, wind, soilt, soilwp, soilwc)
     if any(ismissing.(args))
@@ -190,7 +202,8 @@ get_range(layers::AbstractLayeredMicroclimate{S,I,A,R}) where {S,I,A,R} = R
 @inline catpoint(layers::Tuple{}, i::CartesianIndex) = Float64[]
 @inline catpoint(layers::Tuple, i::CartesianIndex) =
     cat([[cat((getindex(y, i, :) for y in l)..., dims=1)...] for l in layers]..., dims=2)
-@inline catpoint(layers::Vector, i::CartesianIndex) = cat((getindex(y, i, :) for y in layers)..., dims=1)
+@inline catpoint(layers::Vector, i::CartesianIndex) = 
+    cat((getindex(y, i, :) for y in layers)..., dims=1)
 
 
 # Accessors for single layer data
