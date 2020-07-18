@@ -169,7 +169,17 @@ const microclimoz_files = [
     "soil5cm_90pctShade.zip" => "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/knb.92537.1",
 ]
 
-function download_microclim(dir::String; overwrite=true)
+"""
+    download_microclim(dir::String; overwrite=false)
+
+Download the microclim-oz dataset to `dir`.
+
+WARNING: This may take many hours, and requires 380 GB of free space when unzipped.
+
+Passing `overwrite=true` will force downloading and unzipping of all files. 
+Otherwise only missing files are downloaded and unzipped.
+"""
+function download_microclim(dir::String; overwrite=false)
     for (filename, url) in microclimoz_files 
 
         # Download zip file
