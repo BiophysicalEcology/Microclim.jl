@@ -58,7 +58,7 @@ end
 
 
 " Interpolate between two layers of environmental data. "
-@inline interp_layer(layers, interp, i) =
+@inline interp_layer(layers::Matrix, interp, i) =
     lin_interp(layers, i, interp.layer) * (oneunit(interp.frac) - interp.frac) +
     lin_interp(layers, i, interp.layer + 1) * interp.frac
 

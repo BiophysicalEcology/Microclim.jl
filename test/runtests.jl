@@ -102,7 +102,5 @@ end
     @test soilwatercontent(instant) == 0.5
 end
 
-download("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/knb.92496.1", "/home/raf/Data/microclim_oz/RH120cm.zip")
-
 end
 

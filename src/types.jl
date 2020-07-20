@@ -25,6 +25,7 @@ abstract type AbstractMicroclimPoint{S,I,A,R} <: AbstractLayeredMicroclimate{S,I
     soilwatercontent::WC   | 0.3    | _      | (0.0, 1.0)
 end
 
+
 struct MicroclimGrid{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} <: AbstractMicroclimGrid{S,I,A,R}
     radiation::RA
     snowdepth::SN
@@ -34,19 +35,14 @@ struct MicroclimGrid{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} <: AbstractMicroclimGrid{S
     soiltemperature::ST
     soilwaterpotential::WP
     soilwatercontent::WC
-
-    MicroclimGrid{S,I,A,R}(radiation::RA, snowdepth::SN, airtemperature::AT, relhumidity::RH,
-                            windspeed::WS, soiltemperature::ST, soilwaterpotential::WP,
-                            soilwatercontent::WC) where {S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} =
-        new{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC}(radiation, snowdepth, airtemperature,
-            relhumidity, windspeed, soiltemperature, soilwaterpotential, soilwatercontent)
-
-    MicroclimGrid{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC}(radiation::RA, snowdepth::SN, airtemperature::AT, relhumidity::RH,
-                            windspeed::WS, soiltemperature::ST, soilwaterpotential::WP,
-                            soilwatercontent::WC) where {S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} =
-        new{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC}(radiation, snowdepth, airtemperature,
-            relhumidity, windspeed, soiltemperature, soilwaterpotential, soilwatercontent)
 end
+
+MicroclimGrid{S,I,A,R}(radiation::RA, snowdepth::SN, airtemperature::AT, relhumidity::RH,
+                        windspeed::WS, soiltemperature::ST, soilwaterpotential::WP,
+                        soilwatercontent::WC) where {S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} =
+    MicroclimGrid{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC}(radiation, snowdepth, airtemperature,
+        relhumidity, windspeed, soiltemperature, soilwaterpotential, soilwatercontent)
+
 
 struct MicroclimPoint{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} <: AbstractMicroclimPoint{S,I,A,R}
     radiation::RA
@@ -57,39 +53,20 @@ struct MicroclimPoint{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} <: AbstractMicroclimPoint
     soiltemperature::ST
     soilwaterpotential::WP
     soilwatercontent::WC
-
-    MicroclimPoint{S,I,A,R}(radiation::RA, snowdepth::SN, airtemperature::AT, relhumidity::RH,
-                            windspeed::WS, soiltemperature::ST, soilwaterpotential::WP,
-                            soilwatercontent::WC) where {S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} =
-        new{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC}(radiation, snowdepth, airtemperature,
-            relhumidity, windspeed, soiltemperature, soilwaterpotential, soilwatercontent)
-
-    MicroclimPoint{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC}(radiation::RA, snowdepth::SN, airtemperature::AT, relhumidity::RH,
-                            windspeed::WS, soiltemperature::ST, soilwaterpotential::WP,
-                            soilwatercontent::WC) where {S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} =
-        new{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC}(radiation, snowdepth, airtemperature,
-            relhumidity, windspeed, soiltemperature, soilwaterpotential, soilwatercontent)
 end
 
-abstract type AbstractMicroclimInstant end
-
-struct MicroclimInstant{M,I,T} <: AbstractMicroclimInstant
-    microclimate::M
-    interp::I
-    t::T
-end
-MicroclimInstant(microclim, height::Number, t) = 
-    MicroclimInstant(microclim, LinearLayerInterpolators(microclim, height), t)
-
-@inline layermax(layers, x::MicroclimInstant) = layermax(layers, x.interp.increment, x.t)
+MicroclimPoint{S,I,A,R}(radiation::RA, snowdepth::SN, airtemperature::AT, relhumidity::RH,
+                        windspeed::WS, soiltemperature::ST, soilwaterpotential::WP,
+                        soilwatercontent::WC) where {S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC} =
+    MicroclimPoint{S,I,A,R,RA,SN,AT,RH,WS,ST,WP,WC}(radiation, snowdepth, airtemperature,
+        relhumidity, windspeed, soiltemperature, soilwaterpotential, soilwatercontent)
 
 # From external data without units
 MicroclimPoint{S,I,A,R}(radiation::Vector{<:AbstractFloat}, snowdepth::Vector{<:AbstractFloat},
-                      airtemperature::Array{<:AbstractFloat}, relhumidity::Array{<:AbstractFloat},
-                      windspeed::Array{<:AbstractFloat}, soiltemperature::Array{<:AbstractFloat},
-                      soilwaterpotential::Array{<:AbstractFloat}, soilwatercontent::Array{<:AbstractFloat}
+                      airtemperature::Matrix{<:AbstractFloat}, relhumidity::Matrix{<:AbstractFloat},
+                      windspeed::Matrix{<:AbstractFloat}, soiltemperature::Matrix{<:AbstractFloat},
+                      soilwaterpotential::Matrix{<:AbstractFloat}, soilwatercontent::Matrix{<:AbstractFloat}
                      ) where {S,I,A,R} = begin
-
     rad = missing_otherwise(to_radiation, radiation)
     snow = missing_otherwise(to_snowdepth, snowdepth)
     airt = missing_otherwise(to_airtemperature, airtemperature)
@@ -106,19 +83,6 @@ MicroclimPoint{S,I,A,R}(radiation::Vector{<:AbstractFloat}, snowdepth::Vector{<:
         MicroclimPoint{S,I,A,R,typeof.(args)...}(args...)
     end
 end
-
-missing_otherwise(f, d) =
-    (length(d) == 0 || any(ismissing.(d))) ? missing : f.(d) 
-
-missing_otherwise_cat(f, ds::Tuple, i) =
-    map(d -> missing_otherwise_cat(f, d, i), ds)
-missing_otherwise_cat(f, d, i) =
-    if length(d) == 0 
-        nothing
-    else
-        p = catpoint(d, i)
-        any(ismissing.(p)) ? missing : f.(p) 
-    end
 
 # From microclim dataset in tuples and a cartesian index
 # Requires conversion to float from Int
@@ -148,9 +112,42 @@ MicroclimPoint(env::AbstractMicroclimGrid{S,I,A,R}, i::CartesianIndex) where {S,
                    relhumidity(env), windspeed(env), soiltemperature(env),
                    soilwaterpotential(env), soilwatercontent(env), i)
 
+missing_otherwise(f, d) =
+    (length(d) == 0 || any(ismissing.(d))) ? missing : f.(d) 
+
+missing_otherwise_cat(f, ds::Tuple, i) = begin
+    maybedata = map(d -> missing_otherwise_cat(f, d, i), ds)
+    if any(map(ismissing, maybedata))
+        missing
+    else
+        hcat(maybedata...)
+    end
+end
+missing_otherwise_cat(f, d, i) =
+    if length(d) == 0 
+        nothing
+    else
+        p = catpoint(d, i)
+        any(ismissing.(p)) ? missing : f.(p) 
+    end
+
 
 @inline layer_sizes(env::MicroclimPoint{S,I,NL,R}) where {S,I,NL,R} = layer_sizes(zero(NL), I, NL)
 @inline layer_bounds(env::MicroclimPoint{S,I,NL,R}) where {S,I,NL,R} = layer_bounds(I, NL)
+
+
+abstract type AbstractMicroclimInstant end
+
+struct MicroclimInstant{M,I,T} <: AbstractMicroclimInstant
+    microclimate::M
+    interp::I
+    t::T
+end
+MicroclimInstant(microclim, height::Number, t) = 
+    MicroclimInstant(microclim, LinearLayerInterpolators(microclim, height), t)
+
+@inline layermax(layers, x::MicroclimInstant) = layermax(layers, x.interp.increment, x.t)
+
 
 struct MicroclimateLayers{L<:Tuple}
     layers::L
@@ -175,7 +172,7 @@ get_range(layers::AbstractLayeredMicroclimate{S,I,A,R}) where {S,I,A,R} = R
 
 @inline catpoint(layers::Tuple{}, i::CartesianIndex) = Float64[]
 @inline catpoint(layers::Tuple, i::CartesianIndex) =
-    cat([[cat((getindex(y, i, :) for y in l)..., dims=1)...] for l in layers]..., dims=2)
+    cat([[cat((y[i, :] for y in l)..., dims=1)...] for l in layers]..., dims=2)
 @inline catpoint(layers::Vector, i::CartesianIndex) = 
     cat((getindex(y, i, :) for y in layers)..., dims=1)
 

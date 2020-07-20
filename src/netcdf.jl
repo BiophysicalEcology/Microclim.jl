@@ -5,11 +5,11 @@ const LAYERRANGE = (0.01, 1.20) .* m
 
 
 " Load multiple years for an index "
-load_point(basepath, years, shade, i::CartesianIndex, skip=()) = 
+load_point(basepath::String, years::AbstractVector, shade::Int, i::CartesianIndex, skip=()) = 
     MicroclimPoint{shade,LAYERINCREMENTS,NEXTLAYER,LAYERRANGE}(load_microclim(basepath, years, shade, skip, i)...)
 
 " Load grids for a single year "
-load_grid(basepath, years, shade, skip=()) = 
+load_grid(basepath::String, years::AbstractVector, shade::Int, skip=()) = 
     MicroclimGrid{shade,LAYERINCREMENTS,NEXTLAYER,LAYERRANGE}(load_microclim(basepath, years, shade, skip)...)
 
 ifhasdir(loader, basepath, file, empty) = 
@@ -28,39 +28,26 @@ CartesianIndex in args will return a MicroclimPoint.
 load_microclim(basepath, years, shade, skip, args...) = begin
     check_year(years)
 
-    radiation = :radiation in skip ? [] : ifhasdir(basepath, "SOLR", []) do
-        load_file(basepath, "SOLR", years, args...)
-    end
+    radiation = :radiation in skip ? [] : load_file(basepath, "SOLR", years, args...)
 
-    snowdepth = :snowdepth in skip ? [] : ifhasdir(basepath, "SNOWDEP_$(shade)pctShade", []) do
-        load_file(basepath, (n, y) -> "$(n)_$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", "SNOWDEP", years, args...)
-    end
+    snowdepth = :snowdepth in skip ? [] : 
+        load_file((n, y) -> "$(n)/$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", basepath, "SNOWDEP", years, args...)
 
-    airtemperature = :airtemperature in skip ? () : ifhasdir(basepath, "Tair120cm", ()) do
-        load_file(basepath, (n, y) -> "Tair1cm_$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", "TA1cm", years, args...),
-        load_file(basepath, (n, y) -> "Tair120cm/$(n)_$(y).nc", "TA120cm", years, args...)
-    end
+    airtemperature = :airtemperature in skip ? () : 
+        load_file((n, y) -> "Tair1cm/$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", basepath, "TA1cm", years, args...),
+        load_file(basepath, "TA120cm", years, args...)
 
-    relhumidity = :relhumidity in skip ? () : ifhasdir(basepath, "RH120cm", ()) do
-        load_file(basepath, (n, y) -> "$(n)_$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", "RH1cm", years, args...),
+    relhumidity = :relhumidity in skip ? () :
+        load_file((n, y) -> "$(n)/$(shade)pctShade/$(n)_$(shade)pctShade_$(y).nc", basepath, "RH1cm", years, args...),
         load_file(basepath, "RH120cm", years, args...)
-    end
 
-    windspeed = :windspeed in skip ? () : ifhasdir(basepath, "V120cm", ()) do
-        load_file(basepath, "V1cm", years, args...), load_file(basepath, "V120cm", years, args...)
-    end
+    windspeed = :windspeed in skip ? () :
+        load_file(basepath, "V1cm", years, args...), 
+        load_file(basepath, "V120cm", years, args...)
 
-    soiltemperature = :soiltemperature in skip ? () : ifhasdir(basepath, "soil$(shade)cm_$(shade)pctShade", ()) do
-        load_folder(basepath, "soil", LAYERNAMES, years, shade, args...)
-    end
-
-    soilwaterpotential = :soilwaterpotential in skip ? () : ifhasdir(basepath, "pot$(shade)cm_$(shade)pctShade", ()) do
-        load_folder(basepath, "pot", LAYERNAMES, years, shade, args...)
-    end
-
-    soilwatercontent = :soilwatercontent in skip ? () : ifhasdir(basepath, "moist$(shade)cm_$(shade)pctShade", ()) do
-        load_folder(basepath, "moist", LAYERNAMES, years, shade, args...)
-    end
+    soiltemperature = :soiltemperature in skip ? () : load_folder(basepath, "soil", LAYERNAMES, years, shade, args...)
+    soilwaterpotential = :soilwaterpotential in skip ? () : load_folder(basepath, "pot", LAYERNAMES, years, shade, args...)
+    soilwatercontent = :soilwatercontent in skip ? () : load_folder(basepath, "moist", LAYERNAMES, years, shade, args...)
 
     radiation, snowdepth, airtemperature, relhumidity, windspeed, 
     soiltemperature, soilwaterpotential, soilwatercontent
@@ -71,18 +58,21 @@ check_year(year::Integer) = year >= 1990 && year <= 2017 || error("$year is not 
 check_year(years) = check_year(years.start) && check_year(years.stop)
 
 
-load_file(basepath::String, formatter, name::String, years, args...) =
-    load_variable(basepath, formatter, name, name, years, args...)
-load_file(basepath::String, name::String, years, args...) =
-    load_variable(basepath, (n, y) -> "$(n)/$(n)_$(y).nc", name, name, years, args...)
+load_file(formatter::Function, basepath::String, name::String, years, args...) =
+    load_variable(formatter, basepath, name, name, years, args...)
+load_file(basepath::String, name::String, years, args...) = begin
+    formatter = (n, y) -> "$(n)/$(n)_$(y).nc"
+    load_variable(formatter, basepath, name, name, years, args...)
+end
 
 load_folder(basepath, name, layers, years, shade, args...) =
-    tuple((load_variable(basepath, (n, y) -> "$(n)$(l)cm_$(shade)pctShade/$(n)$(l)cm_$(shade)pctShade_$(y).nc", name,
-                         "$(name)$(l)cm", years, args...) for l in layers)...)
+    ((load_variable(basepath, name, "$(name)$(l)cm", years, args...) do n, y 
+         "$(n)$(l)cm/$(shade)pctShade/$(n)$(l)cm_$(shade)pctShade_$(y).nc"
+     end for l in layers)...,)
 
 
 "load timeseries for a single index"
-load_variable(basepath::String, formatter, name::String, varname::String, years,  i::CartesianIndex) = begin
+load_variable(formatter::Function, basepath::String, name::String, varname::String, years,  i::CartesianIndex) = begin
     println("Adding $varname for $years at $i")
     combined_data = Float64[]
     for year in years
@@ -94,7 +84,7 @@ load_variable(basepath::String, formatter, name::String, varname::String, years,
 end
 
 "load timeseries for the whole grid"
-load_variable(basepath::String, formatter, name::String, varname::String, years) = begin
+load_variable(formatter::Function, basepath::String, name::String, varname::String, years) = begin
     println("Adding $varname for $years for complete grid")
 
     # Initialise for the first year, as the eltype is variable
