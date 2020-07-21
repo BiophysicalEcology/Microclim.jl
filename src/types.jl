@@ -138,7 +138,7 @@ missing_otherwise_cat(f, d, i) =
 
 abstract type AbstractMicroclimInstant end
 
-struct MicroclimInstant{M,I,T} <: AbstractMicroclimInstant
+struct MicroclimInstant{M,T,I} <: AbstractMicroclimInstant
     microclimate::M
     t::T
     interp::I
@@ -215,7 +215,7 @@ for name in (:soiltemperature, :soilwatercontent, :soilwaterpotential)
         $(Symbol(:mean_, name))(env::AbstractMicroclimInstant) =
             weightedmean(env, $name(env.microclimate), env.t, env.interp)
         $(Symbol(:mean_, name))(env::AbstractMicroclimInstant, t::Number) =
-            weightedmean(env, $name(env.microclimate), env.interp, t)
+            weightedmean(env, $name(env.microclimate), t, env.interp)
         $(Symbol(:mean_, name))(env::AbstractMicroclimInstant, interp::AbstractLayerInterpolator) =
             weightedmean(env, $name(env.microclimate), env.t, interp)
         # No mean for control, just return the control value
