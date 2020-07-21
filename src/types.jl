@@ -140,13 +140,13 @@ abstract type AbstractMicroclimInstant end
 
 struct MicroclimInstant{M,I,T} <: AbstractMicroclimInstant
     microclimate::M
-    interp::I
     t::T
+    interp::I
 end
-MicroclimInstant(microclim, height::Number, t) = 
-    MicroclimInstant(microclim, LinearLayerInterpolators(microclim, height), t)
+MicroclimInstant(microclim, t, height::Number) = 
+    MicroclimInstant(microclim, t, LinearLayerInterpolators(microclim, height))
 
-@inline layermax(layers, x::MicroclimInstant) = layermax(layers, x.interp.increment, x.t)
+@inline layermax(layers, x::MicroclimInstant) = layermax(layers, x.t, x.interp.increment)
 
 
 struct MicroclimateLayers{L<:Tuple}
@@ -181,8 +181,7 @@ get_range(layers::AbstractLayeredMicroclimate{S,I,A,R}) where {S,I,A,R} = R
 for name in (:radiation, :snowdepth)
     eval(quote
         $name(env::AbstractMicroclimate) = env.$name
-        $name(env::AbstractMicroclimPoint, interp, i) = lin_interp($name(env), i)
-        $name(env::AbstractMicroclimPoint, i) = lin_interp($name(env.microclimate), i)
+        $name(env::AbstractMicroclimPoint, t, interp) = lin_interp($name(env), t)
         $name(env::AbstractMicroclimInstant) = lin_interp($name(env.microclimate), env.t)
         $name(env::AbstractMicroclimControl, x, args...) = $name(env)
     end)
@@ -194,33 +193,31 @@ for (name, mode) in ((:airtemperature, :range), (:relhumidity, :range), (:windsp
                      (:soilwatercontent, :increment))
     eval(quote
         $name(env::AbstractMicroclimate) = env.$name
-        $name(env::AbstractMicroclimPoint, interp::LinearLayerInterpolators, i) =
-            $name(env::AbstractMicroclimPoint, interp.$mode, i)
-        $name(env::AbstractMicroclimPoint, interp::LinearLayerInterpolator, i) =
-            interp_layer($name(env), interp, i)
-        $name(env::AbstractMicroclimPoint, height::Number, i) =
-            $name(env, $(Symbol(mode, :_interpolator))(height), i)
+        $name(env::AbstractMicroclimPoint, t, interp::LinearLayerInterpolators) =
+            $name(env::AbstractMicroclimPoint, t, interp.$mode)
+        $name(env::AbstractMicroclimPoint, t, height::Number) =
+            $name(env, t, $(Symbol(mode, :_interpolator))(height))
         $name(env::AbstractMicroclimInstant) =
-            $name(env.microclimate, env.interp, env.t)
-        $name(env::AbstractMicroclimInstant, i::Number) =
-            $name(env.microclimate, env.interp, i)
+            $name(env.microclimate, env.t, env.interp)
         $name(env::AbstractMicroclimInstant, interp::AbstractLayerInterpolator) =
-            $name(env.microclimate, interp, env.t)
+            $name(env.microclimate, env.t, interp)
         $name(env::AbstractMicroclimControl, x, args...) = $name(env)
+        $name(env::AbstractMicroclimPoint, t, interp::LinearLayerInterpolator) =
+            interp_layer($name(env), t, interp)
     end)
 end
 
 # Accessors for weighted mean of 8 layer data
 for name in (:soiltemperature, :soilwatercontent, :soilwaterpotential)
     eval(quote
-        $(Symbol(:mean_, name))(env::AbstractMicroclimPoint, x, i) =
-            weightedmean(env, $name(env), x, i)
+        $(Symbol(:mean_, name))(env::AbstractMicroclimPoint, t, x) =
+            weightedmean(env, $name(env), t, x)
         $(Symbol(:mean_, name))(env::AbstractMicroclimInstant) =
-            weightedmean(env, $name(env.microclimate), env.interp, env.t)
-        $(Symbol(:mean_, name))(env::AbstractMicroclimInstant, i::Number) =
-            weightedmean(env, $name(env.microclimate), env.interp, i)
+            weightedmean(env, $name(env.microclimate), env.t, env.interp)
+        $(Symbol(:mean_, name))(env::AbstractMicroclimInstant, t::Number) =
+            weightedmean(env, $name(env.microclimate), env.interp, t)
         $(Symbol(:mean_, name))(env::AbstractMicroclimInstant, interp::AbstractLayerInterpolator) =
-            weightedmean(env, $name(env.microclimate), interp, env.t)
+            weightedmean(env, $name(env.microclimate), env.t, interp)
         # No mean for control, just return the control value
         $(Symbol(:mean_, name))(env::AbstractMicroclimControl, args...) = $name(env)
     end)

@@ -58,29 +58,29 @@ end
 
 
 " Interpolate between two layers of environmental data. "
-@inline interp_layer(layers::Matrix, interp, i) =
-    lin_interp(layers, i, interp.layer) * (oneunit(interp.frac) - interp.frac) +
-    lin_interp(layers, i, interp.layer + 1) * interp.frac
+@inline interp_layer(layers::Matrix, t, interp) =
+    lin_interp(layers, t, interp.layer) * (oneunit(interp.frac) - interp.frac) +
+    lin_interp(layers, t, interp.layer + 1) * interp.frac
 
 
 " Linear interpolation "
-@inline lin_interp(vector::Vector, i) = begin
-    int = floor(Int64, i)
-    frac::Float64 = i - int
-    vector[int+1] * (1 - frac) + vector[int] * frac
+@inline lin_interp(vector::Vector, t) = begin
+    t_int = floor(Int64, t)
+    frac = t - t_int
+    vector[t_int] * (oneunit(frac) - frac) + vector[t_int + 1] * frac
 end
-@inline lin_interp(matrix::Matrix, i, j) = begin
-    int = floor(Int64, i)
-    frac::Float64 = i - int
-    matrix[int+1, j] * (1 - frac) + matrix[int, j] * frac
+@inline lin_interp(matrix::Matrix, t, l) = begin
+    t_int = floor(Int64, t)
+    frac = t - t_int
+    matrix[t_int, l] * (oneunit(frac) - frac) + matrix[t_int + 1, l] * frac
 end
-@inline lin_interp(vector::Vector, i::Int) = vector[i]
-@inline lin_interp(matrix::Matrix, i::Int, j) = matrix[i, j]
+@inline lin_interp(vector::Vector, t::Int) = vector[t]
+@inline lin_interp(matrix::Matrix, t::Int, l) = matrix[t, l]
 
 
-@inline weightedmean(env, layers, inpterp::LinearLayerInterpolators, i) = 
-    weightedmean(env, layers, inpterp.height, i)
-weightedmean(env, layers, height::Number, i) = begin
+@inline weightedmean(env, layers, t, inpterp::LinearLayerInterpolators) = 
+    weightedmean(env, layers, t, inpterp.height)
+weightedmean(env, layers, t, height::Number) = begin
     wmean = zero(layers[1][1])*m
     lbounds = layer_bounds(env)
     lsizes = layer_sizes(env)
@@ -89,22 +89,22 @@ weightedmean(env, layers, height::Number, i) = begin
     for l = 1:length(lbounds)
         if h > lbounds[l]
             # add the whole layer 
-            wmean += lin_interp(layers, i, l) * lsizes[l]
+            wmean += lin_interp(layers, t, l) * lsizes[l]
         else
             # add the last fractional layer and break the loop
             frac = 1 - ((lbounds[l] - h) / lsizes[l])
-            wmean += lin_interp(layers, i, l) * lsizes[l] * frac
+            wmean += lin_interp(layers, t, l) * lsizes[l] * frac
             break
         end
     end
     wmean / h
 end
 
-@inline layermax(layers, interp, i) = begin
-    i = floor(Int, i)
-    val = layers[i, 1]
+@inline layermax(layers, t, interp) = begin
+    t_int = floor(Int, t)
+    val = layers[t_int, 1]
     for l = 2:interp.layer
-        val = max(val, layers[i, l])
+        val = max(val, layers[t_int, l])
     end
     val
 end
