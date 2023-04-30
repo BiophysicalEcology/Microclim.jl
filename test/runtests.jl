@@ -1,15 +1,18 @@
-using Microclimate, Unitful, Test
-using Microclimate: range_interpolator, increment_interpolator, interp_layer, layer_sizes,
+using Microclim, Unitful, Test
+using Microclim: range_interpolator, increment_interpolator, interp_layer, layer_sizes,
                     layer_props, layer_bounds, max_height, lin_interp
-using Unitful: W, m, °C, K, s, g, L, kPa
+using Unitful: W, m, °C, K, s, g, L, kPa, °
 
 const layerincrements = (0.0, 0.025, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0) .* m
 const layerrange = (0.01, 1.20) .* m
 const nextlayer = 2.0m
 
 rad = [1000.0, 900.0]W*m^-2
+zenith = [1000.0, 900.0]°
 snow = [1.0, 0.9]m
 airt = [25.0 24.0 
+        30.0 29.0]°C .|> K
+skyt = [25.0 24.0 
         30.0 29.0]°C .|> K
 ws = [1.0 2.0
       3.0 4.0]m*s^-1
@@ -21,9 +24,11 @@ soilwp = [-100.0 -90.0 -120.0 -80.0 -110.0 -70.0 -130.0 -60.0
           -100.0 -90.0 -120.0 -80.0 -110.0 -70.0 -130.0 -60.0]kPa
 soilwc = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3
           0.4 0.5 0.4 0.5 0.4 0.5 0.4 0.5]
+soilhum = [0.2 0.3 0.2 0.3 0.2 0.3 0.2 0.3
+           0.4 0.5 0.4 0.5 0.4 0.5 0.4 0.5]
 
 @testset "MicroclimPoint" begin
-    env = MicroclimPoint{100,layerincrements,nextlayer,layerrange}(rad, snow, airt, rh, ws, soilt, soilwp, soilwc)
+    env = MicroclimPoint{100,layerincrements,nextlayer,layerrange}(rad, zenith, snow, airt, skyt, rh, ws, soilt, soilwp, soilwc, soilhum)
     half = (1.2m - 0.01m) / 2 + 0.01m
 
     @test all(layer_sizes(env) .≈ (0.0125, 0.025, 0.0375, 0.075, 0.1, 0.15, 0.35, 0.75) .* m)
@@ -84,7 +89,7 @@ end
 
 @testset "MicroclimInstant" begin
     point = MicroclimPoint{100,layerincrements,nextlayer,layerrange}(
-        rad, snow, airt, rh, ws, soilt, soilwp, soilwc
+        rad, zenith, snow, airt, skyt, rh, ws, soilt, soilwp, soilwc, soilhum
     )
     instant = MicroclimInstant(point, 1, 1.2m)
     @test radiation(instant) == 1000W*m^-2

@@ -4,6 +4,7 @@ authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+FieldDefaults = "49426c49-986f-5969-8844-d5cc96441cfc"
 FieldMetadata = "bf96fef3-21d2-5d20-8afa-0e7d4c32a885"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
