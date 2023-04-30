@@ -1,10 +1,9 @@
-name = "Microclimate"
-uuid = "e0eb800d-4a9f-54ae-b0f8-217228d9d7c3"
+name = "Microclim"
+uuid = "72103f99-bd8f-4131-b7f1-e6c5fecbcf40"
 authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
-version = "0.0.0"
+version = "0.1.0"
 
 [deps]
-FieldDefaults = "49426c49-986f-5969-8844-d5cc96441cfc"
 FieldMetadata = "bf96fef3-21d2-5d20-8afa-0e7d4c32a885"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"

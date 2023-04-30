@@ -1,4 +1,4 @@
-module Microclimate
+module Microclim
 
 using Unitful, 
       NCDatasets, 
