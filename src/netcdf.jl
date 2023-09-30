@@ -136,11 +136,11 @@ load_variable(formatter::Function, basepath::String, name::String, varname::Stri
         for i in 2:length(years)
             if years[i] in [1900:4:2100;]
                 formatter = (n) -> "$(n)/$(n)_leap.nc"  
-                path = joinpath(basepath, formatter(name, years[i]))
+                path = joinpath(basepath, formatter(name))
                 push!(years_vector, get_yeardata(path, varname))
             else
                 formatter = (n) -> "$(n)/$(n).nc"  
-                path = joinpath(basepath, formatter(name, years[i]))
+                path = joinpath(basepath, formatter(name))
                 push!(years_vector, get_yeardata(path, varname))
             end
         end
